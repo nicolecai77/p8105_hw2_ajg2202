@@ -1,0 +1,9 @@
+---
+title: "HW2"
+output: github_document
+---
+```{r setup}
+library(tidyverse)
+```
+
+
