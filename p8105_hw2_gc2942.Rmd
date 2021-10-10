@@ -9,7 +9,7 @@ library(tidyverse)
 library(dplyr)
 ```
 
-
+#Read and clean the Mr. Trash Wheel sheet:
 ```{r}
 Trash_data = 
   readxl::read_excel(
@@ -21,7 +21,7 @@ Trash_data =
   drop_na(dumpster) %>%
   mutate(sports_balls = round(sports_balls))
 ```
-
+#Read and clean precipitation data for 2018 and 2019. 
 ```{r}
 precipitation_2019_data = 
     readxl::read_excel(
@@ -42,17 +42,62 @@ precipitation_df =  bind_rows(precipitation_2019_data,precipitation_2018_data) %
 
 ```
  
-In Mr. Trash Wheel data set, it has `r nrow(Trash_data)` and contains `r names(Trash_data)` variables. In the combination of precipitation, it has `r nrow(precipitation_df)` and there are `r names(precipitation_df)` in the precipitation. 
-The total precipitation in 2018 `r sum(pull(filter(precipitation_df,year == 2018),total))`.
-The median number of sports balls in a dumpster in 2019 is`r median(pull(filter(Trash_data, year == 2019),sports_balls))`.
+In Mr. Trash Wheel data set, it has `r nrow(Trash_data)` and contains `r names(Trash_data)` variables. In the combination of precipitation, it has `r nrow(precipitation_df)`observations and the variables are `r names(precipitation_df)` in the precipitation. 
+The total precipitation in 2018 is `r sum(pull(filter(precipitation_df,year == 2018),total))`.
+The median number of sports balls in a dumpster in 2019 is `r median(pull(filter(Trash_data, year == 2019),sports_balls))`.
 
 
 ##Problem 2
+#clean the data in pols-month.csv.
+```{r}
+pols_df = read_csv("./data/fivethirtyeight_datasets/pols-month.csv") %>%
+   janitor::clean_names() %>%
+   separate(mon, into = c("year","month","day")) %>%
+   mutate(year = as.integer(year),
+          month = as.integer(month),
+          day = as.integer(day)) %>%
+   mutate(month = month.name[month]) %>%
+   mutate(president = ifelse(prez_dem == "1","dem","gop")) %>%
+   select(-prez_dem,-prez_gop,-day)
+```
+#clean the data in snp.csv
+```{r}
+snp_df = read_csv("./data/fivethirtyeight_datasets/snp.csv") %>%
+   janitor::clean_names() %>%   
+   mutate(date = lubridate::mdy(date)) %>%
+   separate(date, into = c("year","month","day")) %>%
+   mutate(year = as.integer(year),
+          month = as.integer(month),
+          day = as.integer(day)) %>%
+   mutate(month = month.name[month]) %>%
+   select(-day)
+```
+#tidy the unemployment data
+```{r}
+unemployment_data = read_csv("./data/fivethirtyeight_datasets/unemployment.csv") %>%
+    janitor::clean_names() %>%
+ pivot_longer(
+    jan:dec,
+    names_to = "month",
+    values_to = "rate"
+  )
+```
+
+
+
+# Join the datasets
+
+
+pols-month contains `r nrow(pols_df)` and has variable including `r names(pols_df)`. It range between `r min(range(pull(pols_df,year)))` and `r max(range(pull(pols_df,year)))`.
+
+snp contains `r nrow(snp_df)` and has variable including `r names(snp_df)`. It range between 
+`r min(range(pull(snp_df,year)))` and `r max(range(pull(snp_df,year)))`.
+unemployment contains `r nrow(unemployment_data)` and has variable including `r names(unemployment_data)`.It range between `r min(range(pull(unemployment_data,year)))` and `r max(range(pull(unemployment_data,year)))`.
 
 ##Problem 3
 
-
-```{r}
+#Load and tidy the data. Produce a well-structured, reader-friendly table for female whose name is Olivia.
+```{r,message=FALSE}
 Baby_df = 
    read_csv("./data/Popular_Baby_Names.csv") %>%
    janitor::clean_names() %>%   
@@ -70,8 +115,11 @@ Baby_df %>%
   select(-count) %>%
   relocate(childs_first_name,gender,ethnicity)
 ```
-In this problem, I use `r unique(pull(Baby_df,childs_first_name))` and `r unique(pull(Baby_df,ethnicity))` to check the change of string variable over time.
-```{r}
+In this problem, I use `unique(pull(Baby_df,childs_first_name))` and ` unique(pull(Baby_df,ethnicity))` to check the change of string variable over time.
+
+
+#Produce a well-structured, reader-friendly table for male whose name is the most popular
+```{r,message=FALSE}
 Baby_male_df = 
   read_csv("./data/Popular_Baby_Names.csv") %>%
    janitor::clean_names() %>%   
@@ -86,8 +134,8 @@ Baby_male_df =
    janitor::clean_names() %>%
    relocate(gender,childs_first_name)
 ```
-
-```{r}
+#Create a scatter plot for male, white non-hispanic children born in 2016
+```{r,message=FALSE}
 children_2016 = 
    read_csv("./data/Popular_Baby_Names.csv") %>%
    janitor::clean_names() %>% 
