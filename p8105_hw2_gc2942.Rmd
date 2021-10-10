@@ -3,14 +3,15 @@ title: "HW2"
 output: github_document
 ---
 
-##Problem 1
+#Problem 1
 ```{r setup}
 library(tidyverse)
 library(dplyr)
 ```
 
-#Read and clean the Mr. Trash Wheel sheet:
-```{r}
+##Read and clean the Mr. Trash Wheel sheet:
+
+```{r,message=FALSE}
 Trash_data = 
   readxl::read_excel(
     "./data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx",
@@ -21,8 +22,9 @@ Trash_data =
   drop_na(dumpster) %>%
   mutate(sports_balls = round(sports_balls))
 ```
-#Read and clean precipitation data for 2018 and 2019. 
-```{r}
+##Read and clean precipitation data for 2018 and 2019. 
+
+```{r,message=FALSE}
 precipitation_2019_data = 
     readxl::read_excel(
     "./data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx",
@@ -47,9 +49,10 @@ The total precipitation in 2018 is `r sum(pull(filter(precipitation_df,year == 2
 The median number of sports balls in a dumpster in 2019 is `r median(pull(filter(Trash_data, year == 2019),sports_balls))`.
 
 
-##Problem 2
-#clean the data in pols-month.csv.
-```{r}
+#Problem 2
+##clean the data in pols-month.csv.
+
+```{r,message=FALSE}
 pols_df = read_csv("./data/fivethirtyeight_datasets/pols-month.csv") %>%
    janitor::clean_names() %>%
    separate(mon, into = c("year","month","day")) %>%
@@ -60,8 +63,9 @@ pols_df = read_csv("./data/fivethirtyeight_datasets/pols-month.csv") %>%
    mutate(president = ifelse(prez_dem == "1","dem","gop")) %>%
    select(-prez_dem,-prez_gop,-day)
 ```
-#clean the data in snp.csv
-```{r}
+##clean the data in snp.csv
+
+```{r,message=FALSE}
 snp_df = read_csv("./data/fivethirtyeight_datasets/snp.csv") %>%
    janitor::clean_names() %>%   
    mutate(date = lubridate::mdy(date)) %>%
@@ -72,42 +76,57 @@ snp_df = read_csv("./data/fivethirtyeight_datasets/snp.csv") %>%
    mutate(month = month.name[month]) %>%
    select(-day)
 ```
-#tidy the unemployment data
-```{r}
+##tidy the unemployment data
+
+```{r,message=FALSE}
 unemployment_data = read_csv("./data/fivethirtyeight_datasets/unemployment.csv") %>%
     janitor::clean_names() %>%
  pivot_longer(
     jan:dec,
     names_to = "month",
     values_to = "rate"
-  )
+  ) %>%
+  mutate(month = recode(month,"jan" = "January", 
+                        "feb" = "Feburary",
+                        "mar" = "March",
+                        "apr" = "April",
+                        "may" = "May",
+                        "jun" = "June",
+                        "jul" = "July",
+                        "aug" = "August",
+                        "sep" = "Septerber",
+                        "oct" = "October",
+                        "nov" = "Novermber",
+                        "dec" = "December"
+                        )) 
 ```
 
+##Join the dataset
 
-
-# Join the datasets
-```{r}
+```{r,message=FALSE}
 pols_snp = left_join(pols_df,snp_df, by = c("year","month"))
+result = left_join(pols_snp,unemployment_data, by = c("year","month"))
 ```
+##describe the dataset
 
 pols-month contains `r nrow(pols_df)` and has variable including `r names(pols_df)`. It range between `r min(range(pull(pols_df,year)))` and `r max(range(pull(pols_df,year)))`.
-
 snp contains `r nrow(snp_df)` and has variable including `r names(snp_df)`. It range between 
 `r min(range(pull(snp_df,year)))` and `r max(range(pull(snp_df,year)))`.
 unemployment contains `r nrow(unemployment_data)` and has variable including `r names(unemployment_data)`.It range between `r min(range(pull(unemployment_data,year)))` and `r max(range(pull(unemployment_data,year)))`.
 
-##Problem 3
+#Problem 3
 
-#Load and tidy the data. Produce a well-structured, reader-friendly table for female whose name is Olivia.
+##Load and tidy the data. Produce a well-structured, reader-friendly table for female whose name is Olivia.
+
 ```{r,message=FALSE}
 Baby_df = 
    read_csv("./data/Popular_Baby_Names.csv") %>%
    janitor::clean_names() %>%   
    mutate(ethnicity = recode(ethnicity, "ASIAN AND PACI" = "ASIAN AND PACIFIC ISLANDER","WHITE NON HISP" = "WHITE NON HISPANIC", "BLACK NON HISP" = "BLACK NON HISPANIC")) %>%
    mutate(childs_first_name = toupper(childs_first_name)) %>%
-   distinct(childs_first_name,year_of_birth,gender,ethnicity,.keep_all = TRUE) %>%
-   filter(childs_first_name == "OLIVIA", gender == "FEMALE") 
-Baby_df %>%
+   distinct(childs_first_name,year_of_birth,gender,ethnicity,.keep_all = TRUE) 
+female_df = filter(Baby_df,childs_first_name == "OLIVIA", gender == "FEMALE") 
+female_df %>%
   janitor::clean_names() %>%
   arrange(year_of_birth) %>%
   pivot_wider(
@@ -120,32 +139,20 @@ Baby_df %>%
 In this problem, I use `unique(pull(Baby_df,childs_first_name))` and ` unique(pull(Baby_df,ethnicity))` to check the change of string variable over time.
 
 
-#Produce a well-structured, reader-friendly table for male whose name is the most popular
+##Produce a well-structured, reader-friendly table for male whose name is the most popular
 ```{r,message=FALSE}
-Baby_male_df = 
-  read_csv("./data/Popular_Baby_Names.csv") %>%
-   janitor::clean_names() %>%   
-   mutate(ethnicity = recode(ethnicity, "ASIAN AND PACI" = "ASIAN AND PACIFIC ISLANDER","WHITE NON HISP" = "WHITE NON HISPANIC", "BLACK NON HISP" = "BLACK NON HISPANIC")) %>%
-   mutate(childs_first_name = toupper(childs_first_name)) %>%
-   distinct(childs_first_name,year_of_birth,gender,ethnicity,.keep_all = TRUE) %>%
-   filter(gender == "MALE",rank == 1) %>%
-   pivot_wider(
+Baby_male_df = filter(Baby_df,gender == "MALE",rank == 1) %>%
+    pivot_wider(
     names_from = "year_of_birth",
     values_from = "rank"
     ) %>%
    janitor::clean_names() %>%
    relocate(gender,childs_first_name)
 ```
-#Create a scatter plot for male, white non-hispanic children born in 2016
+##Create a scatter plot for male, white non-hispanic children born in 2016
 ```{r,message=FALSE}
-children_2016 = 
-   read_csv("./data/Popular_Baby_Names.csv") %>%
-   janitor::clean_names() %>% 
-   mutate(ethnicity = recode(ethnicity, "ASIAN AND PACI" = "ASIAN AND PACIFIC ISLANDER","WHITE NON HISP" = "WHITE NON HISPANIC", "BLACK NON HISP" = "BLACK NON HISPANIC")) %>%
-   distinct(childs_first_name,year_of_birth,gender,ethnicity,.keep_all = TRUE) %>%
-   filter(gender == "MALE",ethnicity == "WHITE NON HISPANIC", year_of_birth == 2016) %>%
+child_df = filter(Baby_df,gender == "MALE",ethnicity == "WHITE NON HISPANIC", year_of_birth == 2016) %>%
    ggplot(aes(rank, count)) + geom_point()
-
 ```
 
 
